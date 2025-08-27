@@ -3877,6 +3877,8 @@ slideshow-arrows .slideshow-control.slideshow-control--style-none {
 
   @media screen and (min-width: 750px) {
     grid-template-columns: var(--resource-list-columns);
+    --resource-list-columns-per-row: 3;
+    grid-template-columns: repeat(var(--resource-list-columns-per-row), 1fr);
   }
 
   @container resource-list (max-width: 449px) {
