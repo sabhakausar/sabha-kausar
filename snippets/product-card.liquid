@@ -159,6 +159,30 @@
     <p>This is your popup content. Add product-specific details here.</p>
   </div>
 </div>
+<!-- Global Product Popup (appears once for all products) -->
+<div id="productPopup" class="product-popup hidden">
+  <div class="product-popup__content">
+    <button class="popup-close-btn" aria-label="Close Popup">&times;</button>
+    
+    <img id="popupImage" src="" alt="" class="popup-image" />
+    
+    <h3 id="popupTitle"></h3>
+    <p id="popupPrice" class="popup-price"></p>
+    <p id="popupDescription" class="popup-description"></p>
+
+    <div class="popup-options">
+      <p>Color</p>
+      <div id="popupColors" class="popup-colors"></div>
+
+      <p>Size</p>
+      <select id="popupSizes" class="popup-sizes">
+        <option>Choose your size</option>
+      </select>
+    </div>
+
+    <button class="popup-add-to-cart">ADD TO CART →</button>
+  </div>
+</div>
 
   </div>
 </product-card>
