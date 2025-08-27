@@ -146,6 +146,20 @@
     "
   >
     {{ children }}
+     <!-- + Button Icon -->
+<button class="popup-toggle-btn" aria-label="Open Details Popup">
+  <span class="plus-icon">+</span>
+</button>
+
+<!-- Popup -->
+<div class="product-popup hidden">
+  <div class="product-popup__content">
+    <button class="popup-close-btn" aria-label="Close Popup">&times;</button>
+    <h3>More Info</h3>
+    <p>This is your popup content. Add product-specific details here.</p>
+  </div>
+</div>
+
   </div>
 </product-card>
 {%- if settings.transition_to_main_product -%}
