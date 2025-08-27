@@ -3892,7 +3892,7 @@ slideshow-arrows .slideshow-control.slideshow-control--style-none {
     &:has(.resource-list__item:first-child:nth-last-child(3n + 1)),
     /* Clean two full rows when there are 8 items */
     &:has(.resource-list__item:first-child:nth-last-child(8n)) {
-      --resource-list-columns-per-row: 4;
+      --resource-list-columns-per-row: 3;
     }
   }
 
