@@ -15,12 +15,7 @@
     {%- endif -%}
 
     {% comment %} This a way to wait for main content to load when navigating to a new page so that the view transitions can work consistently {% endcomment %}
-    <link
-      rel="expect"
-      href="#MainContent"
-      blocking="render"
-      id="view-transition-render-blocker"
-    >
+   <a href="#MainContent" id="view-transition-render-blocker">Skip to Main Content</a>
 
     {%- render 'meta-tags' -%}
     {%- render 'fonts' -%}
