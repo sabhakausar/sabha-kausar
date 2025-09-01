@@ -1,0 +1,230 @@
+{% comment %}
+  Gift Guide Grid with Popup
+  - 6 product slots, fully customizable from Theme Editor.
+  - Popup shows product details dynamically.
+  - "Add to Cart" functional via Shopify AJAX API.
+  - Special Rule: If user adds a variant containing "Black" + "Medium",
+    then "Soft Winter Jacket" is also auto-added to cart.
+{% endcomment %}
+
+<section class="gift-grid gift-container">
+  <div class="gift-grid__inner">
+    {% for block in section.blocks %}
+      {% if block.settings.product != blank %}
+        {% assign product = all_products[block.settings.product] %}
+        <div class="gift-grid__item" 
+             data-product='{{ product | json | escape }}'>
+          <div class="gift-grid__image">
+            <img
+              src="{{ product.featured_image | image_url: width: 500 }}"
+              alt="{{ product.title | escape }}"
+              width="{{ product.featured_image.width }}"
+              height="{{ product.featured_image.height }}"
+              loading="lazy"
+            >
+          </div>
+          <div class="gift-grid__info">
+            <h3 class="gift-grid__title">{{ product.title }}</h3>
+            <p class="gift-grid__price">{{ product.price | money }}</p>
+            <button class="gift-grid__quickview" type="button">View Details</button>
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+</section>
+
+
+<div class="gift-popup" id="giftPopup" style="display:none;">
+  <div class="gift-popup__overlay"></div>
+  <div class="gift-popup__content">
+    <button class="gift-popup__close" type="button">×</button>
+    <div class="gift-popup__body">
+      <div class="gift-popup__image">
+      <img id="popupImage"  alt="" width="600" height="600" style="width:100%;height:auto;">
+
+      </div>
+      <div class="gift-popup__details">
+        <h3 id="popupTitle"></h3>
+        <p id="popupPrice"></p>
+        <p id="popupDescription"></p>
+        <label for="popupVariants">Choose variant:</label>
+        <select id="popupVariants"></select>
+        <button id="popupAddToCart" type="button">Add to Cart</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .gift-grid__inner {
+    display: grid;
+    grid-template-columns: repeat(auto-fill,minmax(250px,1fr));
+    gap: 20px;
+  }
+  .gift-grid__item {
+    border: 1px solid #eee;
+    padding: 10px;
+    text-align: center;
+  }
+  .gift-grid__quickview {
+    margin-top: 10px;
+    padding: 8px 14px;
+    background: #000;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  .gift-grid__quickview:hover {
+    background: #444;
+  }
+  .gift-popup {
+    position: fixed;
+    top:0; left:0; right:0; bottom:0;
+    z-index:1000;
+  }
+  .gift-popup__overlay {
+    position:absolute;
+    top:0; left:0; right:0; bottom:0;
+    background:rgba(0,0,0,0.6);
+  }
+  .gift-popup__content {
+    position:relative;
+    background:#fff;
+    max-width:800px;
+    margin:50px auto;
+    padding:20px;
+    border-radius:8px;
+    z-index:1001;
+  }
+  .gift-popup__close {
+    position:absolute;
+    top:10px; right:10px;
+    background:none;
+    border:none;
+    font-size:24px;
+    cursor:pointer;
+  }
+  .gift-popup__body {
+    display:flex;
+    gap:20px;
+  }
+  .gift-popup__image img {
+    max-width:300px;
+    height:auto;
+  }
+  @media(max-width:768px){
+    .gift-popup__body { flex-direction:column; }
+  }
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  const popup = document.getElementById("giftPopup");
+  const popupImage = document.getElementById("popupImage");
+  const popupTitle = document.getElementById("popupTitle");
+  const popupPrice = document.getElementById("popupPrice");
+  const popupDescription = document.getElementById("popupDescription");
+  const popupVariants = document.getElementById("popupVariants");
+  const popupAddToCart = document.getElementById("popupAddToCart");
+  let currentProduct = null;
+
+  // Open popup
+  document.querySelectorAll(".gift-grid__quickview").forEach(btn=>{
+    btn.addEventListener("click", function(){
+      const productData = JSON.parse(this.closest(".gift-grid__item").dataset.product);
+
+      currentProduct = productData;
+      popupImage.src = productData.featured_image ? productData.featured_image.src : "";
+      popupTitle.textContent = productData.title;
+      popupPrice.textContent = (productData.price/100).toLocaleString("en-US",{style:"currency",currency:"USD"});
+      popupDescription.textContent = productData.description.replace(/<[^>]+>/g,'');
+
+      popupVariants.innerHTML = "";
+      productData.variants.forEach(v=>{
+        const opt = document.createElement("option");
+        opt.value = v.id;
+        opt.textContent = v.title + " - " + (v.price/100).toLocaleString("en-US",{style:"currency",currency:"USD"});
+        popupVariants.appendChild(opt);
+      });
+
+      popup.style.display="block";
+    });
+  });
+
+  // Close popup
+  document.querySelector(".gift-popup__close").addEventListener("click",()=>popup.style.display="none");
+  document.querySelector(".gift-popup__overlay").addEventListener("click",()=>popup.style.display="none");
+
+  // Add to Cart
+  popupAddToCart.addEventListener("click", function(){
+    const variantId = popupVariants.value;
+
+    // Add selected product
+    fetch("/cart/add.js", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body:JSON.stringify({ items:[{ id:variantId, quantity:1 }] })
+    })
+    .then(res=>res.json())
+    .then(data=>{
+      console.log("Product added:", data);
+
+      // Special rule: if variant title has Black + Medium, auto-add Soft Winter Jacket
+      const selectedVariant = currentProduct.variants.find(v => v.id == variantId);
+      const title = selectedVariant.title.toLowerCase();
+      if(title.includes("black") && title.includes("medium")){
+        // Add Soft Winter Jacket
+        const jacket = {{ all_products['soft-winter-jacket'] | json }};
+        if(jacket && jacket.variants.length>0){
+          fetch("/cart/add.js", {
+            method:"POST",
+            headers:{ "Content-Type":"application/json" },
+            body:JSON.stringify({ items:[{ id:jacket.variants[0].id, quantity:1 }] })
+          }).then(r=>r.json()).then(d=>{
+            console.log("Soft Winter Jacket auto-added:", d);
+            window.location.href="/cart"; // redirect to cart
+          });
+        }
+      } else {
+        window.location.href="/cart"; // redirect to cart
+      }
+    });
+  });
+});
+</script>
+
+{% schema %}
+{
+  "name": "Gift Guide Grid Popup",
+  "settings": [],
+  "blocks": [
+    {
+      "type": "product",
+      "name": "Product",
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Select product"
+        }
+      ]
+    }
+  ],
+  "max_blocks": 6,
+  "presets": [
+    {
+      "name": "Gift Guide — Grid with Popup",
+      "blocks": [
+        { "type": "product" },
+        { "type": "product" },
+        { "type": "product" },
+        { "type": "product" },
+        { "type": "product" },
+        { "type": "product" }
+      ]
+    }
+  ]
+}
+{% endschema %}
